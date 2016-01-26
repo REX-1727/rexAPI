@@ -38,3 +38,152 @@ void getJoysticks(void *ignore)
 		taskDelayUntil(&timeStart,20);
 	}
 }
+
+
+void positionPIDControl(void *ignore)
+{
+	float error = 0;
+	float integral = 0;
+	float derivative = 0;
+	float previousError = 0;
+	unsigned long startTime = millis();
+	unsigned long loopTime;
+	float output = 0;
+	pidParams params = *((pidParams*)ignore);
+
+	if(params.timeOut>0)
+	{
+		while(millis() < startTime + params.timeOut)
+		{
+			loopTime = millis();
+			error = params.target() - params.input();
+			integral += error;
+			derivative = error - previousError;
+
+			if(integral > 50/params.kI)
+				integral = 50/params.kI;
+
+			if(error == 0)
+				integral = 0;
+
+			previousError = error;
+
+			output = (error*params.kP) + (integral*params.kI) + (derivative*params.kD);
+			if(output>127)
+			{
+				output = 127;
+			}
+			foreach(int *motor, params.outputs)
+			{
+				motorSet(abs(*motor), output*(*motor/abs(*motor)));
+			}
+			taskDelayUntil(&loopTime,MOTOR_REFRESH_TIME);
+		}
+	}
+	else
+	{
+		while(true)
+		{
+			loopTime = millis();
+			error = params.target() - params.input();
+			integral += error;
+			derivative = error - previousError;
+
+			if(integral > 50/params.kI)
+				integral = 50/params.kI;
+
+			if(error == 0)
+				integral = 0;
+
+			previousError = error;
+
+			output = (error*params.kP) + (integral*params.kI) + (derivative*params.kD);
+
+			if(output>127)
+			{
+				output = 127;
+			}
+
+			foreach(int *motor, params.outputs)
+			{
+				motorSet(abs(*motor), output*(*motor/abs(*motor)));
+			}
+			taskDelayUntil(&loopTime,MOTOR_REFRESH_TIME);
+		}
+	}
+}
+
+
+void velocityPIDControl( void *ignore)
+{
+	float error = 0;
+	float integral = 0;
+	float derivative = 0;
+	float previousError = 0;
+	unsigned long startTime = millis();
+	unsigned long loopTime;
+	float output = 0;
+	pidParams params = *((pidParams*)ignore);
+
+	if(params.timeOut>0)
+	{
+		while(millis() < startTime + params.timeOut)
+		{
+			loopTime = millis();
+			error = params.target() - params.input();
+			integral += error;
+			derivative = error - previousError;
+
+			if(integral > 50/params.kI)
+				integral = 50/params.kI;
+
+			if(error == 0)
+				integral = 0;
+
+			previousError = error;
+
+			output += (error*params.kP) + (integral*params.kI) + (derivative*params.kD);
+			if(output>127)
+			{
+				output = 127;
+			}
+			foreach(int *motor, params.outputs)
+			{
+				motorSet(abs(*motor), output*(*motor/abs(*motor)));
+			}
+			taskDelayUntil(&loopTime,MOTOR_REFRESH_TIME);
+		}
+	}
+	else
+	{
+		while(true)
+		{
+			loopTime = millis();
+			error = params.target() - params.input();
+			integral += error;
+			derivative = error - previousError;
+
+			if(integral > 50/params.kI)
+				integral = 50/params.kI;
+
+			if(error == 0)
+				integral = 0;
+
+			previousError = error;
+
+			output += (error*params.kP) + (integral*params.kI) + (derivative*params.kD);
+
+			if(output>127)
+			{
+				output = 127;
+			}
+
+			foreach(int *motor, params.outputs)
+			{
+				motorSet(abs(*motor), output*(*motor/abs(*motor)));
+			}
+			taskDelayUntil(&loopTime,MOTOR_REFRESH_TIME);
+		}
+	}
+}
+
