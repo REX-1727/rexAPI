@@ -33,6 +33,7 @@
  */
 
 #include "main.h"
+#include "rexAPI.h"
 
 /*
  * Runs pre-initialization code. This function will be started in kernel mode one time while the
@@ -59,4 +60,11 @@ void initializeIO() {
  * can be implemented in this task if desired.
  */
 void initialize() {
+	lcdInit(uart1);
+	if(!loadMotorSettings() || checkReset())
+	{
+		resetMotorSettings();
+		initializeMotors_lcd();
+		saveMotorSettings();
+	}
 }

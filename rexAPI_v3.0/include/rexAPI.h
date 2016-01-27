@@ -4,12 +4,24 @@
  *  Created on: Jan 26, 2016
  *      Author: Anton
  */
-#include "main.h"
+
 
 #ifndef REXAPI_H_
 #define REXAPI_H_
 
-#define MOTOR_REFRESH_TIME 20
+#include <API.h>
+#include "math.h"
+
+/*
+ * Standard motor refresh time
+ */
+#define MOTOR_REFRESH_TIME	20
+
+/*
+ * Number of output functions defined
+ */
+#define OUTPUT_TYPES	1
+
 
 
 /*
@@ -23,36 +35,58 @@
 				keep = !keep, count++) \
 				for(item = (array) + count; keep; keep = !keep)
 
-int (*motors[10])( char );
-
-char motorInputs[10];
-
+/*
+ * Helper for setMotorOutputFunction_lcd function. Handles lcd printing cases.
+ */
+#define OUTPUT_CASE_LCD(num, output_func) case num:\
+		lcdPrint(uart1, 1, #output_func);\
+		lcdPrint(uart1, 2,"<-   select   ->");\
+		output = output_func;\
+		break;
 
 /*
- * Structure that encompases all button groups on the joystick.
+ * Helper for setMotorOutputAxis_lcd function. Handles lcd printing cases.
  */
-typedef struct buttonGroup
+#define AXIS_CASE_LCD(num, output_axis) case num:\
+		lcdPrint(uart1, 1, #output_axis);\
+		lcdPrint(uart1, 2,"<-   select   ->");\
+		axis = &output_axis;\
+		break;
+
+/*
+ * Structure that encompases axis on the joystick.
+ */
+typedef struct axis
 {
-	bool up;
-	bool down;
-	bool right;
-	bool left;
-}btnGrp;
+	int axisValue;
+}axis;
 
 /*
  * Structure that contains all the values returned from a joystick.
  */
 typedef struct joystick
 {
-	int rightVertical;
-	int rightHorizontal;
-	int leftVertical;
-	int leftHorizontal;
-	btnGrp rightBumper;
-	btnGrp leftBumper;
-	btnGrp rightDpad;
-	btnGrp leftDpad;
+	axis rightVertical;
+	axis rightHorizontal;
+	axis leftVertical;
+	axis leftHorizontal;
+	axis rightBumper;
+	axis leftBumper;
+	axis rightDpad;
+	axis leftDpad;
 } joy;
+
+typedef int (*motorOutput)(axis);
+
+/*
+ * Array of motor output functions
+ */
+motorOutput motors[10];
+
+/*
+ * Array of motor output function axis
+ */
+axis *motorInputs[10];
 
 /*
  * Function that should be run in a task in order to get joystick values constantly.
@@ -63,12 +97,12 @@ void getJoysticks(void *ignore);
 /*
  * Main joystick.
  */
-extern joy main;
+joy main;
 
 /*
  * Partner joystick.
  */
-extern joy partner;
+joy partner;
 
 /*
  * PID parameter structure.
@@ -114,5 +148,54 @@ void positionPIDControl(void *ignore);
  */
 void velocityPIDControl( void *ignore);
 
+/*
+ * Motor init helper function which uses the lcd to set a motor output function.
+ *
+ * @return returns a motor output function
+ */
+motorOutput setMotorOutputFunction_lcd();
 
+/*
+ * Motor init helper function which uses the lcd to set a motor output axis.
+ *
+ * @return returns a motor output axis
+ */
+axis* setMotorOutputAxis_lcd();
+
+/*
+ * Function that returns the digital binary value of a digital button group
+ *
+ * @param joystick the joystick slot to check
+ * @param axis one of 5, 6, 7, or 8 to request that button as labelled on the joystick
+ */
+int joystickGetDigitalAxis(unsigned char joystick, unsigned char axis);
+
+/*
+ * Runs lcd initilization of the motor and motorInputs arrays.
+ */
+void initializeMotors_lcd();
+
+/*
+ * Saves motor settings to file with name "settings". Saves functions then axis.
+ */
+void saveMotorSettings();
+
+/*
+ * Loads motor settings.
+ *
+ * @return true if read succesfully, false otherwise.
+ */
+bool loadMotorSettings();
+
+/*
+ * Prompts user for reset
+ *
+ * @return true if reset requested false otherwise.
+ */
+bool checkReset();
+
+/*
+ * Resets all motor settings to NULL
+ */
+void resetMotorSettings();
 #endif /* REXAPI_H_ */
