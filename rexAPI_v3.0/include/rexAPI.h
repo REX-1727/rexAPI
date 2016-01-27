@@ -89,6 +89,11 @@ motorOutput motors[10];
 axis *motorInputs[10];
 
 /*
+ * Stores current motor outputs.
+ */
+int currentMotorOutputs[10];
+
+/*
  * Function that should be run in a task in order to get joystick values constantly.
  * @param ignore Should be null.
  */
@@ -132,7 +137,7 @@ typedef struct pidParams
  * @param kI Integral constant.
  * @param kD Derivative constant.
  */
-void positionPIDControl(void *ignore);
+void positionPIDControl(void *parameters);
 
 /*
  * Velocity version of a PID loop, make sure that input and target values are sensor velocities
@@ -198,4 +203,9 @@ bool checkReset();
  * Resets all motor settings to NULL
  */
 void resetMotorSettings();
+
+/*
+ * Runs motors based on motor settings.
+ */
+void runMotors(void *parameters);
 #endif /* REXAPI_H_ */

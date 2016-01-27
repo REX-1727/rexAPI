@@ -37,7 +37,7 @@ void getJoysticks(void *ignore)
 	}
 }
 
-void positionPIDControl(void *ignore)
+void positionPIDControl(void *parameters)
 {
 	float error = 0;
 	float integral = 0;
@@ -46,7 +46,7 @@ void positionPIDControl(void *ignore)
 	unsigned long startTime = millis();
 	unsigned long loopTime;
 	float output = 0;
-	pidParams params = *((pidParams*)ignore);
+	pidParams params = *((pidParams*)parameters);
 
 	if(params.timeOut>0)
 	{
@@ -110,7 +110,7 @@ void positionPIDControl(void *ignore)
 	}
 }
 
-void velocityPIDControl(void *ignore)
+void velocityPIDControl(void *parameters)
 {
 	float error = 0;
 	float integral = 0;
@@ -119,7 +119,7 @@ void velocityPIDControl(void *ignore)
 	unsigned long startTime = millis();
 	unsigned long loopTime;
 	float output = 0;
-	pidParams params = *((pidParams*)ignore);
+	pidParams params = *((pidParams*)parameters);
 
 	if(params.timeOut>0)
 	{
@@ -347,4 +347,16 @@ void resetMotorSettings()
 		motorInputs[i] = NULL;
 	}
 
+}
+
+void runMotors(void *parameters)
+{
+	while(true)
+	{
+		for(int i; i<10; i++)
+		{
+			currentMotorOutputs[i] = motors[i](motorInputs[i]);
+			motorSet(i,currentMotorOutputs[i]);
+		}
+	}
 }
