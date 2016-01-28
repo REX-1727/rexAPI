@@ -232,21 +232,21 @@ axis* setMotorOutputAxis_lcd()
 		switch(position)
 		{
 		AXIS_CASE_LCD(1, main.rightHorizontal)
-				AXIS_CASE_LCD(2, main.rightVertical)
-				AXIS_CASE_LCD(3, main.leftVertical)
-				AXIS_CASE_LCD(4, main.leftHorizontal)
-				AXIS_CASE_LCD(5, main.leftBumper)
-				AXIS_CASE_LCD(6, main.rightBumper)
-				AXIS_CASE_LCD(7, main.leftDpad)
-				AXIS_CASE_LCD(8, main.rightDpad)
-				AXIS_CASE_LCD(9, partner.rightHorizontal)
-				AXIS_CASE_LCD(10, partner.rightVertical)
-				AXIS_CASE_LCD(11, partner.leftVertical)
-				AXIS_CASE_LCD(12, partner.leftHorizontal)
-				AXIS_CASE_LCD(13, partner.leftBumper)
-				AXIS_CASE_LCD(14, partner.rightBumper)
-				AXIS_CASE_LCD(15, partner.leftDpad)
-				AXIS_CASE_LCD(16, partner.rightDpad)
+								AXIS_CASE_LCD(2, main.rightVertical)
+								AXIS_CASE_LCD(3, main.leftVertical)
+								AXIS_CASE_LCD(4, main.leftHorizontal)
+								AXIS_CASE_LCD(5, main.leftBumper)
+								AXIS_CASE_LCD(6, main.rightBumper)
+								AXIS_CASE_LCD(7, main.leftDpad)
+								AXIS_CASE_LCD(8, main.rightDpad)
+								AXIS_CASE_LCD(9, partner.rightHorizontal)
+								AXIS_CASE_LCD(10, partner.rightVertical)
+								AXIS_CASE_LCD(11, partner.leftVertical)
+								AXIS_CASE_LCD(12, partner.leftHorizontal)
+								AXIS_CASE_LCD(13, partner.leftBumper)
+								AXIS_CASE_LCD(14, partner.rightBumper)
+								AXIS_CASE_LCD(15, partner.leftDpad)
+								AXIS_CASE_LCD(16, partner.rightDpad)
 		}
 
 		if(lcdReadButtons(uart1) == 1)
@@ -349,14 +349,27 @@ void resetMotorSettings()
 
 }
 
-void runMotors(void *parameters)
+void setMotorPowers()
+{
+	for(int i; i<10; i++)
+	{
+		currentMotorOutputs[i] = motors[i](*motorInputs[i]);
+	}
+}
+
+void setAllMotors()
+{
+	for(int i; i<10; i++)
+	{
+		motorSet(i,currentMotorOutputs[i]);
+	}
+}
+
+void runMotors_op(void *parameters)
 {
 	while(true)
 	{
-		for(int i; i<10; i++)
-		{
-			currentMotorOutputs[i] = motors[i](motorInputs[i]);
-			motorSet(i,currentMotorOutputs[i]);
-		}
+		setMotorPowers();
+		setAllMotors();
 	}
 }

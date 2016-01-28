@@ -205,7 +205,19 @@ bool checkReset();
 void resetMotorSettings();
 
 /*
+ * Sets motors to their currentMotorPower values.
+ */
+void setAllMotors();
+
+/*
+ * Sets currentMotorPower values to their respective power output functions.
+ */
+void setMotorPowers();
+
+/*
  * Runs motors based on motor settings.
  */
-void runMotors(void *parameters);
+void runMotors_op(void *parameters);
+
+
 #endif /* REXAPI_H_ */
