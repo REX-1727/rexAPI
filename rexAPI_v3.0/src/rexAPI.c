@@ -46,31 +46,36 @@ void positionPIDControl(void *parameters)
 	unsigned long startTime = millis();
 	unsigned long loopTime;
 	float output = 0;
-	pidParams params = *((pidParams*)parameters);
+	pidParams *params;
+	params = (pidParams*)parameters;
 
-	if(params.timeOut>0)
+	if(params->timeOut>0)
 	{
-		while(millis() < startTime + params.timeOut)
+		while(millis() < startTime + params->timeOut)
 		{
 			loopTime = millis();
-			error = params.target() - params.input();
+			error = params->target() - params->input();
 			integral += error;
 			derivative = error - previousError;
 
-			if(integral > 50/params.kI)
-				integral = 50/params.kI;
+			if(integral > 50/params->kI)
+				integral = 50/params->kI;
 
 			if(error == 0)
 				integral = 0;
 
 			previousError = error;
 
-			output = (error*params.kP) + (integral*params.kI) + (derivative*params.kD);
+			output = (error*params->kP) + (integral*params->kI) + (derivative*params->kD);
 			if(output>127)
 			{
 				output = 127;
 			}
-			foreach(int *motor, params.outputs)
+			if(output<-127)
+			{
+				output = -127;
+			}
+			foreach(int *motor, params->outputs)
 			{
 				motorSet(abs(*motor), output*(*motor/abs(*motor)));
 			}
@@ -82,32 +87,37 @@ void positionPIDControl(void *parameters)
 		while(true)
 		{
 			loopTime = millis();
-			error = params.target() - params.input();
+			error = params->target() - params->input();
 			integral += error;
 			derivative = error - previousError;
 
-			if(integral > 50/params.kI)
-				integral = 50/params.kI;
+			if(integral > 50/params->kI)
+				integral = 50/params->kI;
 
 			if(error == 0)
 				integral = 0;
 
 			previousError = error;
 
-			output = (error*params.kP) + (integral*params.kI) + (derivative*params.kD);
+			output = (error*params->kP) + (integral*params->kI) + (derivative*params->kD);
 
 			if(output>127)
 			{
 				output = 127;
 			}
+			if(output<-127)
+			{
+				output = -127;
+			}
 
-			foreach(int *motor, params.outputs)
+			foreach(int *motor, params->outputs)
 			{
 				motorSet(abs(*motor), output*(*motor/abs(*motor)));
 			}
 			taskDelayUntil(&loopTime,MOTOR_REFRESH_TIME);
 		}
 	}
+	taskDelete(NULL);
 }
 
 void velocityPIDControl(void *parameters)
@@ -119,31 +129,36 @@ void velocityPIDControl(void *parameters)
 	unsigned long startTime = millis();
 	unsigned long loopTime;
 	float output = 0;
-	pidParams params = *((pidParams*)parameters);
+	pidParams *params;
+	params = (pidParams*)parameters;
 
-	if(params.timeOut>0)
+	if(params->timeOut>0)
 	{
-		while(millis() < startTime + params.timeOut)
+		while(millis() < startTime + params->timeOut)
 		{
 			loopTime = millis();
-			error = params.target() - params.input();
+			error = params->target() - params->input();
 			integral += error;
 			derivative = error - previousError;
 
-			if(integral > 50/params.kI)
-				integral = 50/params.kI;
+			if(integral > 50/params->kI)
+				integral = 50/params->kI;
 
-			if(error == 0)
+			if(abs(error) < 200)
 				integral = 0;
 
 			previousError = error;
 
-			output += (error*params.kP) + (integral*params.kI) + (derivative*params.kD);
+			output += (error*params->kP) + (integral*params->kI) + (derivative*params->kD);
 			if(output>127)
 			{
 				output = 127;
 			}
-			foreach(int *motor, params.outputs)
+			if(output<0)
+			{
+				output = 0;
+			}
+			foreach(int *motor, params->outputs)
 			{
 				motorSet(abs(*motor), output*(*motor/abs(*motor)));
 			}
@@ -155,158 +170,211 @@ void velocityPIDControl(void *parameters)
 		while(true)
 		{
 			loopTime = millis();
-			error = params.target() - params.input();
+			error = params->target() - params->input();
 			integral += error;
 			derivative = error - previousError;
 
-			if(integral > 50/params.kI)
-				integral = 50/params.kI;
+			if(integral > 50/params->kI)
+				integral = 50/params->kI;
 
 			if(error == 0)
 				integral = 0;
 
 			previousError = error;
 
-			output += (error*params.kP) + (integral*params.kI) + (derivative*params.kD);
+			output += (error*params->kP) + (integral*params->kI) + (derivative*params->kD);
 
 			if(output>127)
 			{
 				output = 127;
 			}
 
-			foreach(int *motor, params.outputs)
+			if(output<0)
 			{
-				motorSet(abs(*motor), output*(*motor/abs(*motor)));
+				output = 0;
 			}
+
+			foreach(int *motor, params->outputs)
+			{
+				if(params->target() == 0)
+				{
+					motorSet(abs(*motor),0);
+					output = 0;
+				}
+				else
+					motorSet(abs(*motor), output*(*motor/abs(*motor)));
+			}
+			//printf("%f\n\r",output);
+			//lcdPrint(uart1,2,"%f",output);
 			taskDelayUntil(&loopTime,MOTOR_REFRESH_TIME);
 		}
 	}
+	taskDelete(NULL);
 }
 
-motorOutput setMotorOutputFunction_lcd()
+void positionPIDControl_raw(void *parameters)
 {
-	int position = 1;
-	motorOutput output;
+	float error = 0;
+	float integral = 0;
+	float derivative = 0;
+	float previousError = 0;
+	unsigned long startTime = millis();
+	unsigned long loopTime;
+	float output = 0;
+	pidParams_raw *params;
+	params = (pidParams_raw*)parameters;
 
-	while(true)
+	if(params->timeOut>0)
 	{
-		switch(position)
+		while(millis() < startTime + params->timeOut)
 		{
-		OUTPUT_CASE_LCD(1, NULL)
+			loopTime = millis();
+			error = params->target() - params->input();
+			integral += error;
+			derivative = error - previousError;
 
+			if(integral > 50/params->kI)
+				integral = 50/params->kI;
+
+			if(error == 0)
+				integral = 0;
+
+			previousError = error;
+
+			output = (error*params->kP) + (integral*params->kI) + (derivative*params->kD);
+			if(output>127)
+			{
+				output = 127;
+			}
+			if(output<-127)
+			{
+				output = -127;
+			}
+
+			*(params->outputs) = output;
+			taskDelayUntil(&loopTime,MOTOR_REFRESH_TIME);
 		}
-
-		if(lcdReadButtons(uart1) == 1)
-		{
-			position -= 1;
-			delay(100);
-		}
-
-		else if(lcdReadButtons(uart1) == 2)
-		{
-			return output;
-		}
-
-		else if(lcdReadButtons(uart1) == 4)
-		{
-			position +=1;
-			delay(100);
-		}
-
-		if(position < 1)
-			position = 1;
-
-		else if(position > OUTPUT_TYPES )
-			position = OUTPUT_TYPES;
 	}
-	return NULL;
-}
-
-axis* setMotorOutputAxis_lcd()
-{
-	int position = 1;
-	axis *axis;
-
-	while(true)
+	else
 	{
-		switch(position)
+		while(true)
 		{
-		AXIS_CASE_LCD(1, main.rightHorizontal)
-								AXIS_CASE_LCD(2, main.rightVertical)
-								AXIS_CASE_LCD(3, main.leftVertical)
-								AXIS_CASE_LCD(4, main.leftHorizontal)
-								AXIS_CASE_LCD(5, main.leftBumper)
-								AXIS_CASE_LCD(6, main.rightBumper)
-								AXIS_CASE_LCD(7, main.leftDpad)
-								AXIS_CASE_LCD(8, main.rightDpad)
-								AXIS_CASE_LCD(9, partner.rightHorizontal)
-								AXIS_CASE_LCD(10, partner.rightVertical)
-								AXIS_CASE_LCD(11, partner.leftVertical)
-								AXIS_CASE_LCD(12, partner.leftHorizontal)
-								AXIS_CASE_LCD(13, partner.leftBumper)
-								AXIS_CASE_LCD(14, partner.rightBumper)
-								AXIS_CASE_LCD(15, partner.leftDpad)
-								AXIS_CASE_LCD(16, partner.rightDpad)
+			loopTime = millis();
+			error = params->target() - params->input();
+			integral += error;
+			derivative = error - previousError;
+
+			if(integral > 50/params->kI)
+				integral = 50/params->kI;
+
+			if(error == 0)
+				integral = 0;
+
+			previousError = error;
+
+			output = (error*params->kP) + (integral*params->kI) + (derivative*params->kD);
+
+			if(output>127)
+			{
+				output = 127;
+			}
+			if(output<-127)
+			{
+				output = -127;
+			}
+
+			*(params->outputs) = output;
+			taskDelayUntil(&loopTime,MOTOR_REFRESH_TIME);
 		}
-
-		if(lcdReadButtons(uart1) == 1)
-		{
-			position -= 1;
-			delay(100);
-		}
-
-		else if(lcdReadButtons(uart1) == 2)
-		{
-			return axis;
-		}
-
-		else if(lcdReadButtons(uart1) == 4)
-		{
-			position +=1;
-			delay(100);
-		}
-
-		if(position < 1)
-			position = 1;
-
-		else if(position > 16 )
-			position = 16;
 	}
-	return NULL;
+	taskDelete(NULL);
 }
 
-void initializeMotors_lcd()
+void velocityPIDControl_raw(void *parameters)
 {
-	motors[0] = setMotorOutputFunction_lcd();
-	motors[1] = setMotorOutputFunction_lcd();
-	motors[2] = setMotorOutputFunction_lcd();
-	motors[3] = setMotorOutputFunction_lcd();
-	motors[4] = setMotorOutputFunction_lcd();
-	motors[5] = setMotorOutputFunction_lcd();
-	motors[6] = setMotorOutputFunction_lcd();
-	motors[7] = setMotorOutputFunction_lcd();
-	motors[8] = setMotorOutputFunction_lcd();
-	motors[9] = setMotorOutputFunction_lcd();
+	float error = 0;
+	float integral = 0;
+	float derivative = 0;
+	float previousError = 0;
+	unsigned long startTime = millis();
+	unsigned long loopTime;
+	float output = 0;
+	pidParams *params;
 
-	motorInputs[0] = setMotorOutputAxis_lcd();
-	motorInputs[1] = setMotorOutputAxis_lcd();
-	motorInputs[2] = setMotorOutputAxis_lcd();
-	motorInputs[3] = setMotorOutputAxis_lcd();
-	motorInputs[4] = setMotorOutputAxis_lcd();
-	motorInputs[5] = setMotorOutputAxis_lcd();
-	motorInputs[6] = setMotorOutputAxis_lcd();
-	motorInputs[7] = setMotorOutputAxis_lcd();
-	motorInputs[8] = setMotorOutputAxis_lcd();
-	motorInputs[9] = setMotorOutputAxis_lcd();
+	if(params->timeOut>0)
+	{
+		while(millis() < startTime + params->timeOut)
+		{
+			loopTime = millis();
+			error = params->target() - params->input();
+			integral += error;
+			derivative = error - previousError;
 
+			if(integral > 50/params->kI)
+				integral = 50/params->kI;
+
+			if(abs(error) < 200)
+				integral = 0;
+
+			previousError = error;
+
+			output += (error*params->kP) + (integral*params->kI) + (derivative*params->kD);
+			if(output>127)
+			{
+				output = 127;
+			}
+			if(output<0)
+			{
+				output = 0;
+			}
+			*(params->outputs) = output;
+			taskDelayUntil(&loopTime,MOTOR_REFRESH_TIME);
+		}
+	}
+	else
+	{
+		while(true)
+		{
+			loopTime = millis();
+			error = params->target() - params->input();
+			integral += error;
+			derivative = error - previousError;
+
+			if(integral > 50/params->kI)
+				integral = 50/params->kI;
+
+			if(error == 0)
+				integral = 0;
+
+			previousError = error;
+
+			output += (error*params->kP) + (integral*params->kI) + (derivative*params->kD);
+
+			if(output>127)
+			{
+				output = 127;
+			}
+
+			if(output<0)
+			{
+				output = 0;
+			}
+
+			*(params->outputs) = output;
+
+			taskDelayUntil(&loopTime,MOTOR_REFRESH_TIME);
+		}
+	}
+	taskDelete(NULL);
 }
+
 
 void saveMotorSettings()
 {
 	FILE *settings;
 	settings = fopen("settings", "w");
-	fwrite(&motors, sizeof(motors), 1, settings);
-	fwrite(&motorInputs, sizeof(motorInputs), 1, settings);
+	fwrite(&motionAxes, sizeof(motionAxes), 1, settings);
+	fwrite(&motionInputs, sizeof(motionInputs), 1, settings);
 	fclose(settings);
 }
 
@@ -316,8 +384,8 @@ bool loadMotorSettings()
 	settings = fopen("settings", "r");
 	if(settings != NULL)
 	{
-		fread(&motors, sizeof(motors), 1, settings);
-		fread(&motorInputs, sizeof(motorInputs), 1, settings);
+		fread(&motionAxes, sizeof(motionAxes), 1, settings);
+		fread(&motionInputs, sizeof(motionInputs), 1, settings);
 		fclose(settings);
 		return true;
 	}
@@ -343,8 +411,8 @@ void resetMotorSettings()
 {
 	for(int i=0;i<10;i++)
 	{
-		motors[i] = NULL;
-		motorInputs[i] = NULL;
+		motionAxes[i] = NULL;
+		motionInputs[i] = NULL;
 	}
 
 }
@@ -353,7 +421,7 @@ void setMotorPowers()
 {
 	for(int i; i<10; i++)
 	{
-		currentMotorOutputs[i] = motors[i](*motorInputs[i]);
+		currentMotorOutputs[i] = motionAxes[i](*motionInputs[i]);
 	}
 }
 

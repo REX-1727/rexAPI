@@ -1,10 +1,14 @@
 # Universal C Makefile for MCU targets
 # Top-level template file to configure build
 
+MAKE_COMMAND=make
+
 # Makefile for IFI VeX Cortex Microcontroller (STM32F103VD series)
 DEVICE=VexCortex
 # Libraries to include in the link (use -L and -l) e.g. -lm, -lmyLib
 LIBRARIES=$(ROOT)/firmware/libccos.a -lgcc -lm
+LIBSML=$(ROOT)/firmware/libsml.a
+LIBLCD=$(ROOT)/firmware/liblcd.a
 # Prefix for ARM tools (must be on the path)
 MCUPREFIX=arm-none-eabi-
 # Flags for the assembler
@@ -33,7 +37,7 @@ OUTNAME=output.elf
 AFLAGS:=$(MCUAFLAGS)
 ARFLAGS:=$(MCUCFLAGS)
 CCFLAGS:=-c -Wall $(MCUCFLAGS) -Os -ffunction-sections -fsigned-char -fomit-frame-pointer -fsingle-precision-constant
-CFLAGS:=$(CCFLAGS) -std=gnu99 -Werror=implicit-function-declaration
+CFLAGS:=$(CCFLAGS) -std=gnu99 -Werror=implicit-function-declaration -DVERSION=\"$(GIT_VERSION)\"
 CPPFLAGS:=$(CCFLAGS) -fno-exceptions -fno-rtti -felide-constructors
 LDFLAGS:=-Wall $(MCUCFLAGS) $(MCULFLAGS) -Wl,--gc-sections
 

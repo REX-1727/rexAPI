@@ -76,17 +76,47 @@ typedef struct joystick
 	axis leftDpad;
 } joy;
 
-typedef int (*motorOutput)(axis);
+/*
+ *
+ */
+typedef struct motorAxisParameters
+{
+	int motorPort;
+	axis *controlAxis;
+	bool reversed;
+}motorAxisParams;
 
 /*
- * Array of motor output functions
+ *
  */
-motorOutput motors[10];
+typedef struct pneumaticAxisParameters
+{
+	bool defaultPosition;
+	axis *controlAxis;
+	unsigned long timeDelay;
+
+}pneumaticAxisParams;
 
 /*
- * Array of motor output function axis
+ *
  */
-axis *motorInputs[10];
+typedef struct holonomicAxisParameters
+{
+	int *motorPorts;
+	joy *controlJoystick;
+}holonomicAxisParams;
+
+typedef int (*motionFunction)(void*);
+
+/*
+ * Array of motion functions
+ */
+motionFunction *motionAxes;
+
+/*
+ * Array of motion input structures
+ */
+void *motionInputs;
 
 /*
  * Stores current motor outputs.
@@ -112,6 +142,22 @@ joy partner;
 /*
  * PID parameter structure.
  */
+typedef struct pidParams_raw
+{
+	void *ignore;
+	int	(*input)();
+	int	(*target)();
+	int timeOut;
+	float kP;
+	float kI;
+	float kD;
+	int *outputs;
+
+}pidParams_raw;
+
+/*
+ * PID parameter structure.
+ */
 typedef struct pidParams
 {
 	void *ignore;
@@ -121,7 +167,7 @@ typedef struct pidParams
 	float kP;
 	float kI;
 	float kD;
-	int outputs[4];
+	int *outputs;
 
 }pidParams;
 
@@ -158,7 +204,7 @@ void velocityPIDControl( void *ignore);
  *
  * @return returns a motor output function
  */
-motorOutput setMotorOutputFunction_lcd();
+motionFunction setMotorOutputFunction_lcd();
 
 /*
  * Motor init helper function which uses the lcd to set a motor output axis.
