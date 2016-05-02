@@ -7,6 +7,20 @@
 
 #include "rexAPI.h"
 
+int axesNumber = 0;
+
+motionFunction *holonomicFunctionList;
+
+int holonomicFunctionListSize;
+
+motionFunction *motorFunctionList;
+
+int motorFunctionListSize;
+
+motionFunction *pneumaticFunctionList;
+
+int pneumaticFunctionListSize;
+
 int joystickGetDigitalAxis(unsigned char joystick, unsigned char axis)
 {
 	return 	joystickGetDigital(joystick, axis, JOY_UP)*JOY_UP+
@@ -368,6 +382,177 @@ void velocityPIDControl_raw(void *parameters)
 	taskDelete(NULL);
 }
 
+int selectMotorReversal(int motor)
+{
+	lcdPrint(uart1,1,"    reversed");
+	lcdPrint(uart1,1,"y..............N");
+	delay(500);
+	while(true)
+	{
+		if(lcdReadButtons(uart1) == 1)
+		{
+			return motor;
+		}
+		else if(lcdReadButtons(uart1) == 4)
+		{
+			return -motor;
+		}
+	}
+}
+
+void selectHolonomicMotor(int *motor)
+{
+	int currentPos = 1;
+	while(true)
+	{
+		lcdPrint(uart1,2,"       %d",currentPos);
+
+		if(lcdReadButtons(uart1) == 1)
+		{
+			currentPos--;
+			delay(500);
+		}
+		else if(lcdReadButtons(uart1) == 2)
+		{
+			*motor = selectMotorReversal(currentPos);
+			delay(500);
+			return;
+		}
+		else if(lcdReadButtons(uart1) == 4)
+		{
+			currentPos++;
+			delay(500);
+		}
+		if(currentPos<1)
+			currentPos = 1;
+		if(currentPos>10)
+			currentPos = 10;
+	}
+}
+
+void selectHolonomicJoystick( joy *controlJoystick)
+{
+	lcdPrint(uart1,1,"Select Joystick");
+	lcdPrint(uart1,2,"Main.....Partner");
+	while(true)
+	{
+		if(lcdReadButtons(uart1) == 1)
+		{
+			controlJoystick = &main;
+			return;
+		}
+		else if(lcdReadButtons(uart1) == 4)
+		{
+			controlJoystick = &partner;
+			return;
+		}
+	}
+}
+
+motionFunction selectHolonomicFunction()
+{
+
+}
+
+void addHolonomicDrive()
+{
+	lcdPrint(uart1,1,"RB Motor");
+	axesNumber++;
+	realloc(motionAxes,axesNumber*(sizeof(motionFunction)));
+	realloc(motionInputs, axesNumber*(sizeof(void*)));
+	holonomicAxisParams *holoParams = malloc(sizeof(holonomicAxisParams));
+	delay(500);
+	selectHolonomicMotor(&(holoParams->drive.RB));
+	delay(500);
+	lcdClear(uart1);
+	lcdPrint(uart1,1,"LB Motor");
+	selectHolonomicMotor(&(holoParams->drive.LB));
+	delay(500);
+	lcdClear(uart1);
+	lcdPrint(uart1,1,"RF Motor");
+	selectHolonomicMotor(&(holoParams->drive.RF));
+	delay(500);
+	lcdClear(uart1);
+	lcdPrint(uart1,1,"LF Motor");
+	selectHolonomicMotor(&(holoParams->drive.LF));
+	delay(500);
+	lcdClear(uart1);
+	selectHolonomicJoystick(holoParams->controlJoystick);
+	delay(500);
+	lcdClear(uart1);
+
+
+}
+
+void addMotorAxis()
+{
+
+}
+
+void addPneumaticAxis()
+{
+
+}
+
+void initRobotLcd()
+{
+	int currentPos = 0;
+	bool doneFlag = false;
+	motionAxes = calloc(axesNumber,sizeof(motionFunction));
+	motionInputs = calloc(axesNumber,sizeof(void*));
+	while(!doneFlag)
+	{
+		switch(currentPos)
+		{
+		case ADD_HOLONOMIC_DRIVE:
+			lcdPrint(uart1,1,"Add Holo");
+			lcdPrint(uart1,2,"Drive");
+			break;
+		case ADD_MOTOR_AXIS:
+			lcdPrint(uart1,1,"Add Motor");
+			lcdPrint(uart1,2,"Axis");
+			break;
+		case ADD_PNEUMATIC_AXIS:
+			lcdPrint(uart1,1,"Add Piston");
+			lcdPrint(uart1,2,"Axis");
+			break;
+		}
+
+		if(lcdReadButtons(uart1) == 1)
+		{
+			currentPos--;
+			delay(500);
+		}
+		else if(lcdReadButtons(uart1) == 2)
+		{
+			switch(currentPos)
+			{
+			case ADD_HOLONOMIC_DRIVE:
+				addHolonomicDrive();
+				break;
+			case ADD_MOTOR_AXIS:
+				addMotorAxis();
+				break;
+			case ADD_PNEUMATIC_AXIS:
+				addPneumaticAxis();
+				break;
+			}
+		}
+		else if(lcdReadButtons(uart1) == 4)
+		{
+			currentPos++;
+			delay(500);
+		}
+		if(currentPos<0)
+		{
+			currentPos = 0;
+		}
+		if(currentPos>2)
+		{
+			currentPos = 2;
+		}
+	}
+}
 
 void saveMotorSettings()
 {

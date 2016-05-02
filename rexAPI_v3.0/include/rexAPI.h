@@ -17,10 +17,10 @@
  */
 #define MOTOR_REFRESH_TIME	20
 
-/*
- * Number of output functions defined
- */
-#define OUTPUT_TYPES	1
+#define ADD_HOLONOMIC_DRIVE	0
+#define ADD_MOTOR_AXIS		1
+#define ADD_PNEUMATIC_AXIS	2
+
 
 
 
@@ -77,7 +77,18 @@ typedef struct joystick
 } joy;
 
 /*
- *
+ * Structure containing the motor assignments for a holonomic drive.
+ */
+typedef struct holonomicDrive
+{
+	int RB;
+	int LB;
+	int RF;
+	int LF;
+}holonomicDrive;
+
+/*
+ *	Structure that contains the needed parameters for a motor powered motion axis.
  */
 typedef struct motorAxisParameters
 {
@@ -87,7 +98,7 @@ typedef struct motorAxisParameters
 }motorAxisParams;
 
 /*
- *
+ *	Structure that contains the needed parameters for a pneumatic powered motion axis.
  */
 typedef struct pneumaticAxisParameters
 {
@@ -98,20 +109,50 @@ typedef struct pneumaticAxisParameters
 }pneumaticAxisParams;
 
 /*
- *
+ *	Structure that contains the needed parameters for a Holonomic Drivetrain
  */
 typedef struct holonomicAxisParameters
 {
-	int *motorPorts;
+	holonomicDrive drive;
 	joy *controlJoystick;
 }holonomicAxisParams;
 
+
+/*
+ * Definition of motion function type.
+ */
 typedef int (*motionFunction)(void*);
+
+/*
+ * List of motion Functions related to holonomic Drive
+ */
+motionFunction *holonomicFunctionList;
+
+int holonomicFunctionListSize;
+
+/*
+ * List of motion Functions related to motor Drive
+ */
+motionFunction *motorFunctionList;
+
+int motorFunctionListSize;
+
+/*
+ * List of motion Functions related to pneumatic Drive
+ */
+motionFunction *pneumaticFunctionList;
+
+int pneumaticFunctionListSize;
 
 /*
  * Array of motion functions
  */
 motionFunction *motionAxes;
+
+/*
+ * number of motion axes.
+ */
+int axesNumber;
 
 /*
  * Array of motion input structures
@@ -200,18 +241,32 @@ void positionPIDControl(void *parameters);
 void velocityPIDControl( void *ignore);
 
 /*
- * Motor init helper function which uses the lcd to set a motor output function.
+ * Positional version of a PID loop, make sure that input and target values are sensor positions
+ * not changes in sensor position.
  *
- * @return returns a motor output function
+ * @param input Function which returns the current sensor feedback value.
+ * @param target Function which returns the current target value.
+ * @param timeOut Time, in milliseconds, for which the pid will be active.
+ * @param outputs Pointer to where output is stored.
+ * @param kP Proportional constant.
+ * @param kI Integral constant.
+ * @param kD Derivative constant.
  */
-motionFunction setMotorOutputFunction_lcd();
+void positionPIDControl_raw(void *parameters);
 
 /*
- * Motor init helper function which uses the lcd to set a motor output axis.
+ * Velocity version of a PID loop, make sure that input and target values are sensor velocities
+ * not sensor positions.
  *
- * @return returns a motor output axis
+ * @param input Function which returns the current sensor feedback value .
+ * @param target Function which returns the current target value.
+ * @param timeOut Time, in milliseconds, for which the pid will be active.
+ * @param outputs Pointer to value where output is stored.
+ * @param kP Proportional constant.
+ * @param kI Integral constant.
+ * @param kD Derivative constant.
  */
-axis* setMotorOutputAxis_lcd();
+void velocityPIDControl_raw( void *ignore);
 
 /*
  * Function that returns the digital binary value of a digital button group
@@ -222,9 +277,24 @@ axis* setMotorOutputAxis_lcd();
 int joystickGetDigitalAxis(unsigned char joystick, unsigned char axis);
 
 /*
- * Runs lcd initilization of the motor and motorInputs arrays.
+ * Adds Holonomic drive movement Axis
  */
-void initializeMotors_lcd();
+void addHolonomicDrive();
+
+/*
+ * Adds Motor powered movement Axis
+ */
+void addMotorAxis();
+
+/*
+ * Adds pneumatic piston movement axis
+ */
+void addPneumaticAxis();
+
+/*
+ * Function run on first startup of robot
+ */
+void initRobotLcd();
 
 /*
  * Saves motor settings to file with name "settings". Saves functions then axis.
